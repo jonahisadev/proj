@@ -156,6 +156,29 @@ def pushCode():
 	os.system("git commit -m \"%s\"" % (desc))
 	os.system("git push origin %s" % (branch))
 	
+def setConfig():
+	if os.path.exists(".proj"):
+		print "Project configuration already exists"
+		return
+		
+	# Get info
+	name = raw_input("Enter project name: ")
+	git = raw_input("Has git been set up? (Y/N): ")
+	
+	git_w = "0"
+	if git == "Y":
+		git_w = "1"
+		
+	# Create coniguration
+	os.system("mkdir .proj")
+	os.system("touch .proj/config.txt")
+	
+	# Write config
+	cfg = open(".proj/config.txt", "w")
+	cfg.write("%s\n" % (name))
+	cfg.write(git_w)
+	cfg.close()
+	
 def main():
 	if len(sys.argv) < 2:
 		help()
@@ -174,6 +197,9 @@ def main():
 		
 	elif sys.argv[1] == "push":
 		pushCode()
+	
+	elif sys.argv[1] == "exists":
+		setConfig()
 		
 	else:
 		help()
