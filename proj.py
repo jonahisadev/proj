@@ -12,6 +12,11 @@ from datetime import date
 #	ACTUAL CODE
 #
 
+def checkProjectExists():
+	if not os.path.exists(".proj"):
+		print "Please create a project first"
+		sys.exit(1)
+
 def help():
 	print "Invalid command!"
 	sys.exit(1)
@@ -44,7 +49,8 @@ def createProject():
 	cfg = open(".proj/config.txt", "w")
 	cfg.write("%s\n" % (name))
 	if git == True:
-		cfg.write("1")
+		cfg.write("1\n")
+		cfg.write("master")
 	else:
 		cfg.write("0")
 	cfg.close();
@@ -89,9 +95,7 @@ def deleteProject():
 		
 		
 def deleteClass():
-	if not os.path.exists(".proj"):
-		print "Please create a project first"
-		return
+	checkProjectExists()
 		
 	name = raw_input("Enter class name to delete: ")
 	
@@ -104,9 +108,7 @@ def deleteClass():
 	os.system("rm include/%s/%s.h" % (cfg[0], name))
 	
 def addClass():
-	if not os.path.exists(".proj"):
-		print "Please create a project first"
-		return
+	checkProjectExists()
 	
 	name = raw_input("Enter class name: ")
 	
@@ -132,9 +134,7 @@ def addClass():
 	head.close()
 	
 def pushCode():
-	if not os.path.exists(".proj"):
-		print "Please create a project first"
-		return
+	checkProjectExists()
 		
 	# Get configuration
 	cfg = open(".proj/config.txt", "r").read()
@@ -143,13 +143,15 @@ def pushCode():
 	if not cfg[1] == "1":
 		print "Git was not enabled for this project"
 		return
+		
+	d_branch = cfg[2]
 	
 	# Get description
-	branch = raw_input("Enter branch [master]: ")
+	branch = raw_input("Enter branch [%s]: " % (d_branch))
 	desc = raw_input("Enter commit description: ")
 	
 	if branch == "":
-		branch = "master"
+		branch = d_branch
 	
 	# Run git commands
 	os.system("git add *")
@@ -158,16 +160,20 @@ def pushCode():
 	
 def setConfig():
 	if os.path.exists(".proj"):
-		print "Project configuration already exists"
-		return
+		print "Project already exists"
+		sys.exit(1)
 		
 	# Get info
 	name = raw_input("Enter project name: ")
 	git = raw_input("Has git been set up? (Y/N): ")
 	
 	git_w = "0"
-	if git == "Y":
+	if git.upper() == "Y":
 		git_w = "1"
+		branch = raw_input("What is the current git branch? [master]: ")
+		
+	if branch == "":
+		branch = "master"
 		
 	# Create coniguration
 	os.system("mkdir .proj")
@@ -176,8 +182,119 @@ def setConfig():
 	# Write config
 	cfg = open(".proj/config.txt", "w")
 	cfg.write("%s\n" % (name))
-	cfg.write(git_w)
+	cfg.write("%s\n" % (git_w))
+	if git_w == "1":
+		cfg.write(branch)
 	cfg.close()
+	
+def createBranch():
+	checkProjectExists()
+	
+	# Get configuration
+	cfg_file = open(".proj/config.txt", "r")
+	cfg = cfg_file.read()
+	cfg_file.close()
+	cfg = cfg.split("\n")
+	
+	if not cfg[1] == "1":
+		print "Git was not enabled for this project"
+		return
+	
+	# Create branch	
+	branch = raw_input("Enter a new branch name: ")
+	os.system("git checkout -b %s" % (branch))
+	
+	# Rewrite configuration
+	os.system("rm .proj/config.txt")
+	cfg_file = open(".proj/config.txt", "w")
+	for i in range(0, 2):
+		cfg_file.write("%s\n" % cfg[i])
+	cfg_file.write(branch)
+	cfg_file.close()
+	
+def deleteBranch():
+	checkProjectExists()
+	
+	# Get configuration
+	cfg_file = open(".proj/config.txt", "r")
+	cfg = cfg_file.read()
+	cfg_file.close()
+	cfg = cfg.split("\n")
+	
+	if not cfg[1] == "1":
+		print "Git was not enabled for this project"
+		return
+	
+	# Validate
+	sure = raw_input("Are you sure you want to delete branch %s? (Y/N): " % (cfg[2]))
+	if not sure.upper() == "Y":
+		return
+		
+	# Delete branch
+	os.system("git checkout master")
+	os.system("git branch -d %s" % (cfg[2]))
+	
+	# Rewrite configuration
+	os.system("rm .proj/config.txt")
+	cfg_file = open(".proj/config.txt", "w")
+	for i in range(0, 2):
+		cfg_file.write("%s\n" % cfg[i])
+	cfg_file.write("master")
+	cfg_file.close()
+	
+def switchBranch():
+	checkProjectExists()
+	
+	# Get configuration
+	cfg_file = open(".proj/config.txt", "r")
+	cfg = cfg_file.read()
+	cfg_file.close()
+	cfg = cfg.split("\n")
+	
+	if not cfg[1] == "1":
+		print "Git was not enabled for this project"
+		return
+		
+	# Get branch to switch to
+	branch = raw_input("Enter branch to switch to: ")
+	
+	# Switch
+	os.system("git checkout %s" % (branch))
+		
+	# Rewrite configuration
+	os.system("rm .proj/config.txt")
+	cfg_file = open(".proj/config.txt", "w")
+	for i in range(0, 2):
+		cfg_file.write("%s\n" % cfg[i])
+	cfg_file.write(branch)
+	cfg_file.close()
+	
+def mergeBranch():
+	checkProjectExists()
+	
+	# Get configuration
+	cfg_file = open(".proj/config.txt", "r")
+	cfg = cfg_file.read()
+	cfg_file.close()
+	cfg = cfg.split("\n")
+	
+	if not cfg[1] == "1":
+		print "Git was not enabled for this project"
+		return
+		
+	# Merge
+	m_branch = raw_input("Enter branch to merge into: ")
+	os.system("git checkout %s" % (m_branch))
+	os.system("git merge %s" % (cfg[2]))
+	os.system("git branch -d %s" % (cfg[2]))
+	
+	# Rewrite configuration
+	os.system("rm .proj/config.txt")
+	cfg_file = open(".proj/config.txt", "w")
+	for i in range(0, 2):
+		cfg_file.write("%s\n" % cfg[i])
+	cfg_file.write(m_branch)
+	cfg_file.close()
 	
 def main():
 	if len(sys.argv) < 2:
@@ -197,6 +314,16 @@ def main():
 		
 	elif sys.argv[1] == "push":
 		pushCode()
+		
+	elif sys.argv[1] == "branch":
+		if sys.argv[2] == "create":
+			createBranch()
+		elif sys.argv[2] == "delete":
+			deleteBranch()
+		elif sys.argv[2] == "switch":
+			switchBranch()
+		elif sys.argv[2] == "merge":
+			mergeBranch()
 	
 	elif sys.argv[1] == "exists":
 		setConfig()
@@ -239,7 +366,7 @@ CLASS_HEADER_TEXT = """#ifndef %s
 namespace %s {
 
 	class %s {
-	
+		
 	};
 
 }
@@ -250,7 +377,7 @@ CLASS_SOURCE_TEXT = """#include <%s/%s.h>
 
 namespace %s {
 
-
+	
 
 }"""
 
