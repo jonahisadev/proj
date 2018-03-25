@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/python
 
 #
 #	Project Manager (c) 2017 Jonah Alligood
@@ -53,7 +53,7 @@ def createProject():
 		cfg.write("master")
 	else:
 		cfg.write("0")
-	cfg.close();
+	cfg.close()
 		
 	# Write to Makefile
 	make = open("Makefile", "w")
@@ -132,6 +132,33 @@ def addClass():
 	head = open("include/%s/%s.h" % (cfg[0], name), "w")
 	head.write(CLASS_HEADER_TEXT % (guard, guard, cfg[0], name, guard))
 	head.close()
+
+def addSource():
+	checkProjectExists()
+
+	name = raw_input("Enter source name: ")
+
+	# Get configuration
+	cfg = open(".proj/config.txt", "r").read()
+	cfg = cfg.split("\n")
+	
+	# Create files
+	os.system("touch src/%s.cpp" % (name))
+
+def addHeader():
+	checkProjectExists()
+
+	name = raw_input("Enter header name: ")
+
+	cfg = open(".proj/config.txt", "r").read()
+	cfg = cfg.split("\n")
+
+	os.system("touch include/%s/%s.h" % (cfg[0], name))
+
+	guard = HEADER_GUARD % (cfg[0].upper(), name.upper())
+	head = open("include/%s/%s.h" % (cfg[0], name), "w")
+	head.write("#ifndef %s\n#define %s" % (guard, guard))
+	head.write("\n\n\n\n#endif // %s_%s_H" % (cfg[0].upper(), name.upper()))
 	
 def pushCode():
 	checkProjectExists()
@@ -311,6 +338,12 @@ def main():
 		
 	elif sys.argv[1] == "class":
 		addClass()
+
+	elif sys.argv[1] == "source":
+		addSource()
+
+	elif sys.argv[1] == "header":
+		addHeader()
 		
 	elif sys.argv[1] == "push":
 		pushCode()
